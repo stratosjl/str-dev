@@ -26,6 +26,7 @@ if [ ! -s "$patterns" ]; then
   exit 1
 fi
 
+remote_name=${1:-}
 checked=0
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ -n "${local_sha:-}" ] || continue
@@ -34,20 +35,33 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     fail=1; continue
   fi
   checked=$((checked + 1))
+
+  # An annotated tag is checked as a tag, then its commit history like a branch.
+  if [ "$(git cat-file -t "$local_sha" 2>/dev/null)" = tag ]; then
+    te=$(git for-each-ref --format='%(taggeremail:trim)' "$local_ref")
+    if [ "$te" != "$ALLOWED_EMAIL" ]; then
+      say "REFUSED: tag $local_ref uses an address other than the no-reply one"; fail=1
+    fi
+    if git cat-file tag "$local_sha" | grep -q -i -F -f "$patterns"; then
+      say "REFUSED: tag $local_ref message contains a deny-pattern term"; fail=1
+    fi
+  fi
+
+  # Every commit being published, not only the tip: a file added and later deleted stays in history.
   if [ "$remote_sha" = "$ZERO" ]; then
-    range=$(git rev-list "$local_sha" --not --remotes=origin)
+    if [ -n "$remote_name" ]; then
+      range=$(git rev-list "$local_sha" --not --remotes="$remote_name") || range=__error__
+    else
+      range=$(git rev-list "$local_sha") || range=__error__
+    fi
+  elif ! git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    say "REFUSED: the remote's $remote_ref is at ${remote_sha:0:12}, which this clone does not have; fetch first"
+    fail=1; continue
   else
-    range=$(git rev-list "$remote_sha..$local_sha")
+    range=$(git rev-list "$remote_sha..$local_sha") || range=__error__
   fi
-
-  bad_paths=$(git ls-tree -r --name-only "$local_sha" | grep -vE "$ALLOWED_PATHS")
-  if [ -n "$bad_paths" ]; then
-    say "REFUSED: paths outside the allowlist in $local_ref:"; printf '  %s\n' $bad_paths >&2; fail=1
-  fi
-
-  hits=$(git grep -I -i -l -F -f "$patterns" "$local_sha" -- 2>/dev/null)
-  if [ -n "$hits" ]; then
-    say "REFUSED: deny-pattern terms found in (terms not printed):"; printf '  %s\n' $hits >&2; fail=1
+  if [ "$range" = __error__ ]; then
+    say "REFUSED: could not list the commits being pushed for $local_ref"; fail=1; continue
   fi
 
   for c in $range; do
@@ -57,6 +71,16 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     fi
     if git log -1 --format='%B' "$c" | grep -q -i -F -f "$patterns"; then
       say "REFUSED: commit ${c:0:12} message contains a deny-pattern term"; fail=1
+    fi
+    bad_paths=$(git ls-tree -r --name-only "$c" | grep -vE "$ALLOWED_PATHS")
+    if [ -n "$bad_paths" ]; then
+      say "REFUSED: commit ${c:0:12} holds paths outside the allowlist:"; printf '  %s\n' $bad_paths >&2; fail=1
+    fi
+    hits=$(git grep -I -i -l -F -f "$patterns" "$c" --); grc=$?
+    if [ "$grc" -gt 1 ]; then
+      say "REFUSED: the content scan of commit ${c:0:12} failed (git grep exit $grc)"; fail=1
+    elif [ -n "$hits" ]; then
+      say "REFUSED: commit ${c:0:12} has deny-pattern terms in (terms not printed):"; printf '  %s\n' $hits >&2; fail=1
     fi
   done
 done
