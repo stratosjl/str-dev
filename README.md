@@ -27,6 +27,8 @@ makepkg -si
 
 Update through pacman, not through the launcher's own "Update and restart" button, so pacman's file records stay correct.
 
+The package installs upstream's binary as `/usr/lib/artcraft-launcher/artcraft-launcher` and a small wrapper as `/usr/bin/artcraft-launcher`. The wrapper adds the package revision to `--version` (`artcraft-launcher 0.5.1 (package artcraft-launcher-bin 0.5.1-3)`) and passes every other call to the binary unchanged. List any file the package adds beyond the tarball's in `_added`, so the file count against the tarball still adds up.
+
 ## Licence and trademarks
 
 The launcher is MIT OR Apache-2.0. The ArtCraft name, logo and icons are trademarks of the ArtCraft Team and are not covered by those licences; the package installs them unmodified, as upstream ships them.

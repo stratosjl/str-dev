@@ -1,11 +1,12 @@
 pkgbase = artcraft-launcher-bin
 	pkgdesc = Install, update and launch the Craft App Suite (prebuilt binary)
 	pkgver = 0.5.1
-	pkgrel = 2
+	pkgrel = 3
 	url = https://getartcraft.com/apps
 	arch = x86_64
 	license = MIT OR Apache-2.0
 	license = LicenseRef-ArtCraft-trademarks
+	depends = bash
 	depends = dbus
 	depends = glibc
 	depends = hicolor-icon-theme

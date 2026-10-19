@@ -5,13 +5,15 @@
 pkgname=artcraft-launcher-bin
 _pkgname=artcraft-launcher
 pkgver=0.5.1
-pkgrel=2
+pkgrel=3
 pkgdesc="Install, update and launch the Craft App Suite (prebuilt binary)"
 arch=('x86_64')
 url="https://getartcraft.com/apps"
 license=('MIT OR Apache-2.0' 'LicenseRef-ArtCraft-trademarks')
 # The binary links only to glibc and libgcc; the windowing libraries below are loaded at runtime.
+# bash: the /usr/bin wrapper is a sh script.
 depends=(
+  'bash'
   'dbus'
   'glibc'
   'hicolor-icon-theme'
@@ -33,6 +35,8 @@ provides=("${_pkgname}")
 conflicts=("${_pkgname}")
 # Upstream ships the binary already stripped, so there is nothing for a debug package to hold.
 options=('!strip' '!debug')
+# Files the package adds beyond the tarball's; bin/check.sh counts them.
+_added=('usr/bin/artcraft-launcher')
 _tarball="${_pkgname}-${pkgver}-linux-x86_64.tar.gz"
 source=("${_tarball}::https://github.com/storytold/craft-launcher/releases/download/v${pkgver}/${_tarball}")
 # From upstream's SHA256SUMS.txt for the release.
@@ -41,7 +45,18 @@ sha256sums=('6cb893c5635e30f35629117c6992e1ea120e0bb6c17f0432e2c11387f3a7858a')
 package() {
   cd "${_pkgname}-${pkgver}-linux-x86_64"
 
-  install -Dm755 "bin/${_pkgname}" "${pkgdir}/usr/bin/${_pkgname}"
+  # The upstream binary lives under /usr/lib; /usr/bin holds a wrapper that adds the package
+  # revision to --version and runs the binary unchanged for everything else.
+  install -Dm755 "bin/${_pkgname}" "${pkgdir}/usr/lib/${_pkgname}/${_pkgname}"
+  install -Dm755 /dev/stdin "${pkgdir}/usr/bin/${_pkgname}" <<EOF
+#!/bin/sh
+if [ "\$#" -eq 1 ] && { [ "\$1" = --version ] || [ "\$1" = -V ]; }; then
+  v=\$(/usr/lib/${_pkgname}/${_pkgname} --version) || exit
+  printf '%s (package ${pkgname} ${pkgver}-${pkgrel})\\n' "\$v"
+  exit 0
+fi
+exec /usr/lib/${_pkgname}/${_pkgname} "\$@"
+EOF
 
   install -Dm644 -t "${pkgdir}/usr/share/applications" share/applications/*.desktop
   install -Dm644 -t "${pkgdir}/usr/share/metainfo" share/metainfo/*.metainfo.xml
