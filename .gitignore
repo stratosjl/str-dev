@@ -1,0 +1,11 @@
+# Session records live in a separate private repo cloned here. Never publish them.
+/private/
+
+# Downloaded sources, built packages and makepkg working folders: fetched or rebuilt, never committed.
+*.tar.gz
+*.pkg.tar.*
+cases/*/src/
+cases/*/pkg/
+
+# Local tooling state.
+/.remember/
