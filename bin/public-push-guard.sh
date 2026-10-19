@@ -36,29 +36,36 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
   checked=$((checked + 1))
 
-  # An annotated tag is checked as a tag, then its commit history like a branch.
-  if [ "$(git cat-file -t "$local_sha" 2>/dev/null)" = tag ]; then
-    te=$(git for-each-ref --format='%(taggeremail:trim)' "$local_ref")
+  # Walk every layer of an annotated tag (tags can wrap tags), checking each one, then require
+  # that what is finally published is a commit: a tag on a tree or a blob is refused outright.
+  obj=$local_sha
+  while [ "$(git cat-file -t "$obj" 2>/dev/null)" = tag ]; do
+    body=$(git cat-file tag "$obj")
+    te=$(printf '%s\n' "$body" | sed -n 's/^tagger .*<\(.*\)> [0-9].*/\1/p' | head -1)
     if [ "$te" != "$ALLOWED_EMAIL" ]; then
-      say "REFUSED: tag $local_ref uses an address other than the no-reply one"; fail=1
+      say "REFUSED: tag object ${obj:0:12} in $local_ref uses an address other than the no-reply one"; fail=1
     fi
-    if git cat-file tag "$local_sha" | grep -q -i -F -f "$patterns"; then
-      say "REFUSED: tag $local_ref message contains a deny-pattern term"; fail=1
+    if printf '%s\n' "$body" | grep -q -i -F -f "$patterns"; then
+      say "REFUSED: tag object ${obj:0:12} in $local_ref contains a deny-pattern term"; fail=1
     fi
+    obj=$(printf '%s\n' "$body" | sed -n 's/^object //p' | head -1)
+  done
+  if [ "$(git cat-file -t "$obj" 2>/dev/null)" != commit ]; then
+    say "REFUSED: $local_ref does not resolve to a commit"; fail=1; continue
   fi
 
   # Every commit being published, not only the tip: a file added and later deleted stays in history.
   if [ "$remote_sha" = "$ZERO" ]; then
     if [ -n "$remote_name" ]; then
-      range=$(git rev-list "$local_sha" --not --remotes="$remote_name") || range=__error__
+      range=$(git rev-list "$obj" --not --remotes="$remote_name") || range=__error__
     else
-      range=$(git rev-list "$local_sha") || range=__error__
+      range=$(git rev-list "$obj") || range=__error__
     fi
   elif ! git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
     say "REFUSED: the remote's $remote_ref is at ${remote_sha:0:12}, which this clone does not have; fetch first"
     fail=1; continue
   else
-    range=$(git rev-list "$remote_sha..$local_sha") || range=__error__
+    range=$(git rev-list "$remote_sha..$obj") || range=__error__
   fi
   if [ "$range" = __error__ ]; then
     say "REFUSED: could not list the commits being pushed for $local_ref"; fail=1; continue
