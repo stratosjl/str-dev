@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Pre-push guard for the PUBLIC str-dev repo. Install: ln -s ../../bin/public-push-guard.sh .git/hooks/pre-push
-# Refuses the push (exit 1) when the pushed tree holds a path outside the allowlist, when any file or
-# commit message contains a term from private/deny-patterns.txt, or when a pushed commit carries an
-# author or committer address other than the GitHub no-reply one. Fails closed when the pattern file
+# Refuses the push (exit 1) when the pushed tree holds a path outside the allowlist, when any file
+# (text or binary), commit message, author or committer name, tag or ref name contains a term from
+# private/deny-patterns.txt, or when a pushed commit carries an author or committer address other
+# than the GitHub no-reply one. Fails closed when the pattern file
 # is missing or empty. Reads git's pre-push lines on stdin: <local ref> <local sha> <remote ref> <remote sha>.
 set -uo pipefail
 
@@ -35,6 +36,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     fail=1; continue
   fi
   checked=$((checked + 1))
+
+  # Ref names are published too, and a lightweight tag has no object of its own to scan.
+  if printf '%s\n%s\n' "$local_ref" "$remote_ref" | grep -q -i -F -f "$patterns"; then
+    say "REFUSED: a ref name in this push contains a deny-pattern term"; fail=1
+  fi
 
   # Walk every layer of an annotated tag (tags can wrap tags), checking each one, then require
   # that what is finally published is a commit: a tag on a tree or a blob is refused outright.
@@ -79,11 +85,15 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     if git log -1 --format='%B' "$c" | grep -q -i -F -f "$patterns"; then
       say "REFUSED: commit ${c:0:12} message contains a deny-pattern term"; fail=1
     fi
+    if git log -1 --format='%an%n%cn' "$c" | grep -q -i -F -f "$patterns"; then
+      say "REFUSED: commit ${c:0:12} author or committer name contains a deny-pattern term"; fail=1
+    fi
     bad_paths=$(git ls-tree -r --name-only "$c" | grep -vE "$ALLOWED_PATHS")
     if [ -n "$bad_paths" ]; then
       say "REFUSED: commit ${c:0:12} holds paths outside the allowlist:"; printf '  %s\n' $bad_paths >&2; fail=1
     fi
-    hits=$(git grep -I -i -l -F -f "$patterns" "$c" --); grc=$?
+    # -a: scan binary files as text; -I would skip them.
+    hits=$(git grep -a -i -l -F -f "$patterns" "$c" --); grc=$?
     if [ "$grc" -gt 1 ]; then
       say "REFUSED: the content scan of commit ${c:0:12} failed (git grep exit $grc)"; fail=1
     elif [ -n "$hits" ]; then
