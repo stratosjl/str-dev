@@ -1,7 +1,7 @@
 pkgbase = artcraft-launcher-bin
 	pkgdesc = Install, update and launch the Craft App Suite (prebuilt binary)
 	pkgver = 0.5.1
-	pkgrel = 1
+	pkgrel = 2
 	url = https://getartcraft.com/apps
 	arch = x86_64
 	license = MIT OR Apache-2.0
@@ -17,6 +17,7 @@ pkgbase = artcraft-launcher-bin
 	depends = libxkbcommon
 	depends = libxkbcommon-x11
 	depends = wayland
+	optdepends = flatpak: install Craft apps, which upstream ships as Flatpak bundles
 	optdepends = polkit: install Craft apps system-wide (pkexec)
 	optdepends = noto-fonts-cjk: Chinese, Japanese and Korean interface text
 	provides = artcraft-launcher

@@ -5,7 +5,7 @@
 pkgname=artcraft-launcher-bin
 _pkgname=artcraft-launcher
 pkgver=0.5.1
-pkgrel=1
+pkgrel=2
 pkgdesc="Install, update and launch the Craft App Suite (prebuilt binary)"
 arch=('x86_64')
 url="https://getartcraft.com/apps"
@@ -25,6 +25,7 @@ depends=(
   'wayland'
 )
 optdepends=(
+  'flatpak: install Craft apps, which upstream ships as Flatpak bundles'
   'polkit: install Craft apps system-wide (pkexec)'
   'noto-fonts-cjk: Chinese, Japanese and Korean interface text'
 )
@@ -51,7 +52,8 @@ package() {
   done
 
   local doc=share/doc/${_pkgname}
-  install -Dm644 -t "${pkgdir}/usr/share/doc/${_pkgname}" "${doc}/README.md" "${doc}/ATTRIBUTION.md"
+  install -Dm644 -t "${pkgdir}/usr/share/doc/${_pkgname}" "${doc}/README.md"
+  # ATTRIBUTION.md holds the trademark notice that LicenseRef-ArtCraft-trademarks refers to.
   install -Dm644 -t "${pkgdir}/usr/share/licenses/${pkgname}" \
-    "${doc}/LICENSE-MIT" "${doc}/LICENSE-APACHE" "${doc}/NOTICE"
+    "${doc}/LICENSE-MIT" "${doc}/LICENSE-APACHE" "${doc}/NOTICE" "${doc}/ATTRIBUTION.md"
 }

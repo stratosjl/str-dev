@@ -22,7 +22,8 @@ makepkg -si
 1. Set `pkgver` in the PKGBUILD and reset `pkgrel=1`.
 2. Copy the new tarball's SHA-256 from the release's `SHA256SUMS.txt` into `sha256sums`.
 3. Compare the new tarball with the old one: file layout, and the libraries the binary loads (`strings bin/<name> | grep -oE 'lib[A-Za-z0-9_+-]+\.so'`). Add any new library's owning package (`pacman -Qo`) to `depends`.
-4. `makepkg -f`, `namcap` on the PKGBUILD and the package, then `makepkg --printsrcinfo > .SRCINFO`.
+4. Check the programs the binary runs, such as `flatpak` and `pkexec` (`strings bin/<name> | grep -wE 'flatpak|pkexec|zenity'`, and the launcher's log after installing an app). Add each one's owning package to `optdepends`.
+5. `makepkg -f`, `namcap` on the PKGBUILD and the package, then `makepkg --printsrcinfo > .SRCINFO`.
 
 Update through pacman, not through the launcher's own "Update and restart" button, so pacman's file records stay correct.
 
