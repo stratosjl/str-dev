@@ -31,4 +31,6 @@ The package installs upstream's binary as `/usr/lib/artcraft-launcher/artcraft-l
 
 ## Licence and trademarks
 
+The packaging files in this repository (PKGBUILDs, `.SRCINFO` files and the push guard) are under the 0BSD licence, in `LICENSE`.
+
 The launcher is MIT OR Apache-2.0. The ArtCraft name, logo and icons are trademarks of the ArtCraft Team and are not covered by those licences; the package installs them unmodified, as upstream ships them.
