@@ -5,7 +5,7 @@
 pkgname=artcraft-launcher-bin
 _pkgname=artcraft-launcher
 pkgver=0.5.1
-pkgrel=3
+pkgrel=4
 pkgdesc="Install, update and launch the Craft App Suite (prebuilt binary)"
 arch=('x86_64')
 url="https://getartcraft.com/apps"
@@ -30,9 +30,11 @@ optdepends=(
   'flatpak: install Craft apps, which upstream ships as Flatpak bundles'
   'polkit: install Craft apps system-wide (pkexec)'
   'noto-fonts-cjk: Chinese, Japanese and Korean interface text'
+  'xdg-desktop-portal: file chooser and system theme (the binary calls org.freedesktop.portal)'
 )
 provides=("${_pkgname}")
-conflicts=("${_pkgname}")
+# craft-launcher-bin (AUR) ships the same desktop file and icons under another name.
+conflicts=("${_pkgname}" 'craft-launcher-bin')
 # Upstream ships the binary already stripped, so there is nothing for a debug package to hold.
 options=('!strip' '!debug')
 # Files the package adds beyond the tarball's; bin/check.sh counts them.
