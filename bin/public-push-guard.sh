@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pre-push guard for the PUBLIC str-dev repo. Install: ln -s ../../bin/public-push-guard.sh .git/hooks/pre-push
 # Refuses the push (exit 1) when the pushed tree holds a path outside the allowlist, when any file
-# (text or binary), commit message, author or committer name, tag or ref name contains a term from
+# (text or binary), path name, commit message, author or committer name, tag or ref name contains a term from
 # private/deny-patterns.txt, or when a pushed commit carries an author or committer address other
 # than the GitHub no-reply one. Fails closed when the pattern file
 # is missing or empty. Reads git's pre-push lines on stdin: <local ref> <local sha> <remote ref> <remote sha>.
@@ -87,6 +87,10 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     fi
     if git log -1 --format='%an%n%cn' "$c" | grep -q -i -F -f "$patterns"; then
       say "REFUSED: commit ${c:0:12} author or committer name contains a deny-pattern term"; fail=1
+    fi
+    # Path names are published as well: the allowlist fixes their shape, not the words in them.
+    if git ls-tree -r --name-only "$c" | grep -q -i -F -f "$patterns"; then
+      say "REFUSED: commit ${c:0:12} has a path whose name contains a deny-pattern term"; fail=1
     fi
     bad_paths=$(git ls-tree -r --name-only "$c" | grep -vE "$ALLOWED_PATHS")
     if [ -n "$bad_paths" ]; then
