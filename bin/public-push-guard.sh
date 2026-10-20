@@ -8,7 +8,7 @@
 set -uo pipefail
 
 ALLOWED_EMAIL='979708+stratosjl@users.noreply.github.com'
-ALLOWED_PATHS='^(\.gitignore|README\.md|CLAUDE\.md|bin/public-push-guard\.sh|cases/[A-Za-z0-9._-]+/(PKGBUILD|\.SRCINFO|README\.md))$'
+ALLOWED_PATHS='^(\.gitignore|README\.md|CLAUDE\.md|LICENSE|bin/public-push-guard\.sh|cases/[A-Za-z0-9._-]+/(PKGBUILD|\.SRCINFO|README\.md))$'
 ZERO='0000000000000000000000000000000000000000'
 
 top=$(git rev-parse --show-toplevel) || exit 1
