@@ -4,9 +4,11 @@ Arch Linux packages for software that upstream ships only as prebuilt tarballs.
 
 ## Packages
 
-| Package | Version | Upstream | Folder |
-|---|---|---|---|
-| `artcraft-launcher-bin` | 0.5.1 | [storytold/craft-launcher](https://github.com/storytold/craft-launcher) | `cases/artcraft/` |
+| Package | Version | Upstream | Folder | Status |
+|---|---|---|---|---|
+| `artcraft-launcher-bin` | 0.5.1 | [storytold/craft-launcher](https://github.com/storytold/craft-launcher) | `cases/artcraft/` | Archived 2026-10-20: use the AUR's [`craft-launcher-bin`](https://aur.archlinux.org/packages/craft-launcher-bin) |
+
+An archived package is kept as it was last built and is not updated. The instructions below describe how it was built and maintained.
 
 ## Build and install
 
